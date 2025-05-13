@@ -5,12 +5,12 @@ import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyAN9vNsWxje6ZuplKuKtQont4U-1O3q0iQ",
-  authDomain: "agendapro-25c7e.firebaseapp.com",
-  projectId: "agendapro-25c7e",
-  storageBucket: "agendapro-25c7e.firebasestorage.app",
-  messagingSenderId: "10663019990",
-  appId: "1:10663019990:web:25ff3ba4da0228355ed077"
+  apiKey: import.meta.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.VITE_FIREBASE_APP_ID
 };
 
 // Initialize Firebase
