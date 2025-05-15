@@ -2,7 +2,8 @@ import { useNavigate } from "react-router-dom";
 import { useContext, useState } from "react";
 import { AuthContext } from "../../contexts/auth";
 import { validarCPF } from "../../utils/validarcpf";
-
+import { db } from "../../firebaseConnection";
+import { addDoc, collection } from "firebase/firestore";
 
 function Home() {
   const [nome, setNome] = useState("");
@@ -10,20 +11,45 @@ function Home() {
   const [nicho, setNicho] = useState("Cabeleireiro");
 
   const navigate = useNavigate();
-  const { signed, Logout } =  useContext(AuthContext);
+  const { signed, Logout, user } =  useContext(AuthContext);
 
   function handle(){
     Logout()
     navigate('/')
   }
 
-  function handleForm(e){
+  async function handleForm(e){
     e.preventDefault();
     
+    // Vaerificar valores Nulos
     if (!nome || !cpf || !nicho) {
       alert("Preencha todos os campos.");
       return;
     }
+
+    // Validação do CPF
+    if (!validarCPF(cpf)) {
+      alert("CPF inválido.");
+      return;
+    }
+
+    await addDoc(collection(db, "funcionarios"), {
+      nome: nome,
+      cpf: cpf,
+      nicho: nicho,
+      status: "disponivel",
+      created: new Date(),
+      userUid: user?.uid 
+    })
+    .then(() => {
+      console.log("tarefa cadastrada")
+      setCpf('')
+      setNicho('')
+      setNome('')
+    })
+    .catch((error) => {
+      console.log("Error ao registrar: ", error)
+    })
 
     console.log(validarCPF(cpf))
     console.log(nome, cpf, nicho)
