@@ -30,7 +30,7 @@ export function useFuncionarios(profissao) {
 
       setFuncionarios(lista);
     });
-
+    
     return () => unsub();
   }, [profissao]);
 

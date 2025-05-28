@@ -11,25 +11,26 @@ export default function TabelaFuncionarios( {profissao} ) {
   const navigate = useNavigate()
 
   //Cria uma coleção 'atendimentos' que salva o atendimento do profissional  
-  async function registrarAtendimento(profissionalId) {
+  async function registrarAtendimento(profissionalId, profissionalName) {
   const dataAtual = new Date();
   const dataFormatada = dataAtual.toISOString().split('T')[0]; // "2025-05-20"
 
   await addDoc(collection(db, 'atendimentos'), {
     profissionalId,
+    profissionalName,
     data: dataFormatada,
     horario: Timestamp.fromDate(dataAtual)
     });
   }
 
 
-  async function handleStatusChange(idDoc, novoStatus) {
+  async function handleStatusChange(idDoc, nomeDoc,novoStatus) {
     const docRef = doc(db, "funcionarios", idDoc);
     const payload = { status: novoStatus };
 
-    // console.log(idDoc)
+    // console.log(idDoc, nomeDoc)
     if (novoStatus === "disponivel") {
-      registrarAtendimento(idDoc)
+      registrarAtendimento(idDoc, nomeDoc)
       payload.ultimoStatusDisponivel = serverTimestamp();
     }
 
@@ -65,7 +66,7 @@ export default function TabelaFuncionarios( {profissao} ) {
             <td>
               <select
                 value={func.status}
-                onChange={(e) => handleStatusChange(func.idDoc, e.target.value)}
+                onChange={(e) => handleStatusChange(func.idDoc, func.nome,e.target.value)}
               >
                 <option value="disponivel">Disponível</option>
                 <option value="ocupado">Ocupado</option>
