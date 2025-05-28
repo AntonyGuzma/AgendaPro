@@ -1,22 +1,17 @@
-import { useNavigate } from "react-router-dom";
 import { useContext, useState } from "react";
 import { AuthContext } from "../../contexts/auth";
 import { validarCPF } from "../../utils/validarcpf";
 import { db } from "../../firebaseConnection";
 import { addDoc, collection } from "firebase/firestore";
+import Header from "../../components/Header";
+import TabelaFuncionarios from "../../components/TabelaFuncionarios";
 
 function Home() {
   const [nome, setNome] = useState("");
   const [cpf, setCpf] = useState("");
   const [nicho, setNicho] = useState("Cabeleireiro");
+  const { Logout, user } =  useContext(AuthContext);
 
-  const navigate = useNavigate();
-  const { signed, Logout, user } =  useContext(AuthContext);
-
-  function handle(){
-    Logout()
-    navigate('/')
-  }
 
   async function handleForm(e){
     e.preventDefault();
@@ -57,13 +52,8 @@ function Home() {
 
   return (
     <>
-      <header
-        style={{ display: "flex", justifyContent: "flex-end", padding: "1rem" }}
-      >
-        {signed ? <p>Usuário autenticado</p> : <p>Usuário não autenticado</p>}
-        <button onClick={handle}>Sair</button>
-      </header>
-      <div className="container py-4">
+      <Header/>
+      <div className="container py-1">
         <h1 className="text-center">Cadastro de Profissionais</h1>
         <form className="mb-4" onSubmit={handleForm}>
           <div className="mb-3">
@@ -89,7 +79,7 @@ function Home() {
               />
             </div>
             <div className="col-12 col-md-6 mb-3">
-              <label className="form-label">Nicho</label>
+              <label className="form-label">Profissão</label>
               <select
                 className="form-select form-select-sm"
                 value={nicho}
@@ -104,6 +94,10 @@ function Home() {
 
           <button type="submit" className="btn btn-primary">Cadastrar</button>
         </form>
+      </div>
+
+      <div className="container my-4">
+        <TabelaFuncionarios profissao="Cabeleireiro"/>
       </div>
     </>
   );
