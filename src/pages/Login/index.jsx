@@ -22,7 +22,7 @@ function Login() {
 
   return (
     <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
-      <div className="container p-4 shadow-sm bg-white rounded col-12 col-sm-8 col-md-6 col-lg-4">
+      <div className="container p-4 shadow-sm bg-white rounded col-9 col-sm-5 col-md-4 col-lg-3">
         <h1 className="text-center mb-4">Login</h1>
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
