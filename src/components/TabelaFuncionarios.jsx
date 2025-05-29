@@ -1,14 +1,30 @@
 import { db } from "../firebaseConnection";
 import { collection, doc, updateDoc, addDoc, Timestamp, serverTimestamp } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
-import { useFuncionarios } from "../hooks/useFuncionarios";
-import useTime from "../hooks/useTime";
-import { formatarTempo } from "../utils/formatarTempo";
+import { useFuncionarioContext } from "../contexts/FuncionarioContext";
 
 export default function TabelaFuncionarios( {profissao} ) {
-  // Utilizando o hooks que retorna do firebase os dados em tempo real a cada alteração
-  const funcionarios = useFuncionarios(profissao);
+  // Utilizando o AuthContext que retorna do firebase os dados em tempo real a cada alteração
+  const { funcionarios } = useFuncionarioContext()
   const navigate = useNavigate()
+
+  // Filtra pela profissão
+  const filtrados = funcionarios.filter(func => func.nicho === profissao);
+  console.log(filtrados)
+
+  // Ordena pela lógica de status e tempo
+  const ordenados = filtrados.sort((a, b) => {
+    if (a.status === "ocupado" && b.status !== "ocupado") return 1;
+    if (a.status !== "ocupado" && b.status === "ocupado") return -1;
+
+    if (a.status === "disponivel" && b.status === "disponivel") {
+      const aTime = a.ultimoStatusDisponivel?.toDate().getTime() || 0;
+      const bTime = b.ultimoStatusDisponivel?.toDate().getTime() || 0;
+      return aTime - bTime;
+    }
+
+    return 0;
+  });
 
   //Cria uma coleção 'atendimentos' que salva o atendimento do profissional  
   async function registrarAtendimento(profissionalId, profissionalName) {
@@ -22,7 +38,6 @@ export default function TabelaFuncionarios( {profissao} ) {
     horario: Timestamp.fromDate(dataAtual)
     });
   }
-
 
   async function handleStatusChange(idDoc, nomeDoc,novoStatus) {
     const docRef = doc(db, "funcionarios", idDoc);
@@ -59,7 +74,7 @@ export default function TabelaFuncionarios( {profissao} ) {
         </tr>
       </thead>
       <tbody>
-        {funcionarios.map((func) => (
+        {ordenados.map((func) => (
             <tr key={func.idDoc}>
             <td>{func.nome}</td>
             <td><button onClick={() => handleEdit(func.idDoc)} className="btn">Editar</button></td>

@@ -1,8 +1,11 @@
+import { FuncionarioProvider } from "./contexts/FuncionarioContext"
 import RoutesApp from "./routes"
 
 function App() {
   return (
-      <RoutesApp/> 
+      <FuncionarioProvider>
+        <RoutesApp/>
+      </FuncionarioProvider>
   )
 }
 
