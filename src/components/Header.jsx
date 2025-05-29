@@ -3,7 +3,9 @@ import { FaUserCircle } from "react-icons/fa";
 import { AuthContext } from "../contexts/auth";
 import { useContext } from "react";
 import { useNavigate } from "react-router-dom";
-
+/*
+  Comentário para fazer um teste de commit
+*/
 function Header() {
   const navigate = useNavigate();
   const { Logout } = useContext(AuthContext);
