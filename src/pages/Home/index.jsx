@@ -53,7 +53,7 @@ function Home() {
   return (
     <>
       <Header/>
-      <div className="container py-1">
+      <div className="container-sm py-1">
         <h1 className="text-center">Cadastro de Profissionais</h1>
         <form className="mb-4" onSubmit={handleForm}>
           <div className="mb-3">
@@ -97,7 +97,7 @@ function Home() {
       </div>
 
       <div className="container my-4">
-        <TabelaFuncionarios profissao="Cabeleireiro"/>
+        <TabelaFuncionarios profissao="Depilador"/>
       </div>
     </>
   );

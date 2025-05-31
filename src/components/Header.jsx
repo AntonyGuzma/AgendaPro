@@ -31,6 +31,9 @@ function Header() {
           </Dropdown.Toggle>
 
           <Dropdown.Menu>
+            <Dropdown.Item onClick={() => navigate('/painel')}>
+              Painel <i class="bi bi-check-circle-fill"></i>
+            </Dropdown.Item>
             <Dropdown.Item onClick={Sair}>
               Sair
             </Dropdown.Item>
