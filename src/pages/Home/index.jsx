@@ -37,13 +37,14 @@ function Home() {
       userUid: user?.uid 
     })
     .then(() => {
-      console.log("tarefa cadastrada")
+      alert("Funcionário cadastrado com sucesso!")
       setCpf('')
       setNicho('')
       setNome('')
     })
     .catch((error) => {
       console.log("Error ao registrar: ", error)
+      alert("Erro ao cadastrar funcionário: " + error.message)
     })
 
     console.log(validarCPF(cpf))
@@ -54,7 +55,7 @@ function Home() {
     <>
       <Header/>
       <div className="container py-1">
-        <h1 className="text-center">Cadastro de Profissionais</h1>
+        <h1 className="text-center">Cadastro de Funcionários</h1>
         <form className="mb-4" onSubmit={handleForm}>
           <div className="mb-3">
             <label className="form-label">Nome</label>
@@ -97,7 +98,7 @@ function Home() {
       </div>
 
       <div className="container my-4">
-        <TabelaFuncionarios profissao="Cabeleireiro"/>
+        <TabelaFuncionarios />
       </div>
     </>
   );
