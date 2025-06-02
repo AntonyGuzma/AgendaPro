@@ -1,27 +1,44 @@
 import { db } from "../firebaseConnection";
-import { collection, doc, updateDoc, addDoc, Timestamp, serverTimestamp } from "firebase/firestore";
-import { useNavigate } from "react-router-dom";
-import { useFuncionarioContext } from "../contexts/FuncionarioContext";
+import { collection, doc, updateDoc, addDoc, Timestamp, serverTimestamp, deleteDoc, query, onSnapshot } from "firebase/firestore";
+import { useState, useEffect } from "react";
 
-export default function TabelaFuncionarios( {profissao} ) {
-  // Utilizando o AuthContext que retorna do firebase os dados em tempo real a cada alteração
-  const { funcionarios } = useFuncionarioContext()
-  const navigate = useNavigate()
+export default function TabelaFuncionarios() {
+  const [funcionarios, setFuncionarios] = useState([]);
+  const [atendimentosPorFuncionario, setAtendimentosPorFuncionario] = useState({});
+  const [showModal, setShowModal] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState(null);
+  const [searchNome, setSearchNome] = useState("");
+  const [searchNicho, setSearchNicho] = useState("");
 
-  // Filtra pela profissão
-  const filtrados = funcionarios.filter(func => func.nicho === profissao);
-  console.log(filtrados)
+  // Buscar todos os funcionários
+  useEffect(() => {
+    const q = query(collection(db, "funcionarios"));
+    const unsub = onSnapshot(q, (querySnapshot) => {
+      let funcionariosArray = [];
+      querySnapshot.forEach((doc) => {
+        funcionariosArray.push({
+          ...doc.data(),
+          idDoc: doc.id
+        });
+      });
+      setFuncionarios(funcionariosArray);
+    });
 
-  // Ordena pela lógica de status e tempo
-  const ordenados = filtrados.sort((a, b) => {
-    if (a.status === "ocupado" && b.status !== "ocupado") return 1;
-    if (a.status !== "ocupado" && b.status === "ocupado") return -1;
+    return () => unsub();
+  }, []);
 
-    if (a.status === "disponivel" && b.status === "disponivel") {
-      const aTime = a.ultimoStatusDisponivel?.toDate().getTime() || 0;
-      const bTime = b.ultimoStatusDisponivel?.toDate().getTime() || 0;
-      return aTime - bTime;
-    }
+  // Buscar e contar atendimentos
+  useEffect(() => {
+    const q = query(collection(db, "atendimentos"));
+    const unsub = onSnapshot(q, (querySnapshot) => {
+      const contagem = {};
+      querySnapshot.forEach((doc) => {
+        const atendimento = doc.data();
+        const profissionalId = atendimento.profissionalId;
+        contagem[profissionalId] = (contagem[profissionalId] || 0) + 1;
+      });
+      setAtendimentosPorFuncionario(contagem);
+    });
 
     return 0;
   });
