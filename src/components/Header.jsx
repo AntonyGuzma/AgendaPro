@@ -31,8 +31,14 @@ function Header() {
           </Dropdown.Toggle>
 
           <Dropdown.Menu>
+            <Dropdown.Item onClick={() => navigate('/home')}>
+              Home <i className="bi bi-house-fill"></i>
+            </Dropdown.Item>
+            <Dropdown.Item onClick={() => navigate('/atendimentos')}>
+              Atendimentos <i className="bi bi-calendar-check"></i>
+            </Dropdown.Item>
             <Dropdown.Item onClick={() => navigate('/painel')}>
-              Painel <i class="bi bi-check-circle-fill"></i>
+              Painel <i className="bi bi-check-circle-fill"></i>
             </Dropdown.Item>
             <Dropdown.Item onClick={Sair}>
               Sair

@@ -4,6 +4,7 @@ import Login from "../pages/Login";
 import Painel from "../pages/Painel";
 import Register from "../pages/Register";
 import EditEmployer from '../pages/EditEmployeeID'
+import Atendimentos from '../pages/Atendimentos'
 import Private from "./Private";
 import { AuthProvider } from "../contexts/auth";
 
@@ -17,6 +18,7 @@ function RoutesApp(){
                         <Route path="/painel" element={ <Painel/> }></Route>
                         <Route path="/register" element={ <Register/> }></Route>
                         <Route path="/home" element={  <Private> <Home/> </Private>  }></Route>
+                        <Route path="/atendimentos" element={  <Private> <Atendimentos/> </Private>  }></Route>
                         <Route path="/edit-employer/:id" element={  <Private> <EditEmployer/> </Private>  }></Route>
                     
                         <Route path="*" element={ <Private> <Home/> </Private>  }></Route> 
