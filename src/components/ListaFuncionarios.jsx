@@ -1,4 +1,5 @@
 import { useFuncionarioContext } from "../contexts/FuncionarioContext"
+import { mudarBadge } from "../utils/mudarBadge";
 
 function ListaFuncionarios() {
 // Utilizando o AuthContext que retorna do firebase os dados em tempo real a cada alteração
@@ -13,7 +14,7 @@ function ListaFuncionarios() {
       {profissoes.map((profissao) => (
         <div key={profissao} className="p-3 mb-4" style={{ minWidth: '300px' }}>
           <h2>{profissao}</h2>
-          <table class="table table-borderless">
+          <table className="table table-borderless">
             <thead>
               <tr>
                 <th>Nome</th>
@@ -21,15 +22,16 @@ function ListaFuncionarios() {
               </tr>
             </thead>
             <tbody>
-          {funcionarios
-            .filter(func => func.nicho === profissao)
-            .map(func => (
-              <tr key={func.id}>
-                <td>{func.nome}</td>
-                <td>{func.status} </td>
-              </tr>
-            ))}
-        </tbody>
+              {funcionarios
+                .filter(func => func.nicho === profissao)
+                .map(func => (
+                  <tr>
+                    <td>{func.nome}</td>
+                    <td>{mudarBadge(func.status)} </td>
+                  </tr>
+                ))
+              }
+            </tbody>
           </table>
         </div>
       ))}

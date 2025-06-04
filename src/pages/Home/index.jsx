@@ -5,6 +5,7 @@ import { db } from "../../firebaseConnection";
 import { addDoc, collection } from "firebase/firestore";
 import Header from "../../components/Header";
 import TabelaFuncionarios from "../../components/TabelaFuncionarios";
+import { FiPlus } from "react-icons/fi";
 
 function Home() {
   const [nome, setNome] = useState("");
@@ -92,12 +93,12 @@ function Home() {
             </div>
           </div>
 
-          <button type="submit" className="btn btn-primary">Cadastrar</button>
+          <button type="submit" className="btn btn-primary"><FiPlus color="red"></FiPlus></button>
         </form>
       </div>
 
       <div className="container my-4">
-        <TabelaFuncionarios profissao="Depilador"/>
+        <TabelaFuncionarios/>
       </div>
     </>
   );
