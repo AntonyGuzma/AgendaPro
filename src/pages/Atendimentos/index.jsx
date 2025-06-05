@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { db } from '../../firebaseConnection';
 import { collection, query, onSnapshot, enableNetwork, disableNetwork, doc, getDoc } from 'firebase/firestore';
 import Header from '../../components/Header';
-// comentário só pra testar estratégia de controle de versão
+// comentário só pra testar estratégia de controle de versão  - segundo teste
 export default function Atendimentos() {
   const [atendimentos, setAtendimentos] = useState([]);
   const [funcionarios, setFuncionarios] = useState({});
