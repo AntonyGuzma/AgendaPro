@@ -13,7 +13,6 @@ function Home() {
   const [nicho, setNicho] = useState("Cabeleireiro");
   const { Logout, user } =  useContext(AuthContext);
 
-
   async function handleForm(e){
     e.preventDefault();
     

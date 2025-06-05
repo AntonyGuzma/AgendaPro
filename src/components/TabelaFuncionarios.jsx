@@ -15,19 +15,24 @@ export default function TabelaFuncionarios() {
   
   // Buscar todos os funcionários
   useEffect(() => {
-    const q = query(collection(db, "funcionarios"));
-    const unsub = onSnapshot(q, (querySnapshot) => {
-      let funcionariosArray = [];
-      querySnapshot.forEach((doc) => {
-        funcionariosArray.push({
-          ...doc.data(),
-          idDoc: doc.id
+    try {
+      const q = query(collection(db, "funcionarios"));
+      const unsub = onSnapshot(q, (querySnapshot) => {
+        let funcionariosArray = [];
+        querySnapshot.forEach((doc) => {
+          funcionariosArray.push({
+            ...doc.data(),
+            idDoc: doc.id
+          });
         });
+        setFuncionarios(funcionariosArray);
       });
-      setFuncionarios(funcionariosArray);
-    });
 
-    return () => unsub();
+      return () => unsub();
+    } catch (error) {
+      console.error("Erro ao configurar listener:", error);
+      alert("Erro ao carregar funcionários: " + error.message);
+    }
   }, []);
 
   // Buscar e contar atendimentos
@@ -77,6 +82,7 @@ export default function TabelaFuncionarios() {
       await updateDoc(docRef, payload);
     } catch (error) {
       console.error("Erro ao atualizar status:", error);
+      alert("Erro ao atualizar status: " + error.message);
     }
   }
 

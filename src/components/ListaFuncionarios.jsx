@@ -8,7 +8,7 @@ function ListaFuncionarios() {
   // Separar Todas as Profissoes Existentes em outra lista 
   const profissoes = [...new Set(funcionarios.map(func => func.nicho))];
  
-  return (
+  return (      
     <div className="container py-4">
       <h2 className="text-center mb-4 fw-semibold">Painel de Funcionários</h2>
       
@@ -50,4 +50,4 @@ function ListaFuncionarios() {
   )
 }
 
-export default ListaFuncionarios
+export default ListaFuncionarios;
