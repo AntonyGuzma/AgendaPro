@@ -54,47 +54,53 @@ function Home() {
   return (
     <>
       <Header/>
-      <div className="container-sm py-1">
-        <h1 className="text-center">Cadastro de Profissionais</h1>
-        <form className="mb-4" onSubmit={handleForm}>
-          <div className="mb-3">
-            <label className="form-label">Nome</label>
-            <input
-              type="text"
-              className="form-control form-control-sm w-50"
-              placeholder="Nome"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-            ></input>
-          </div>
-          <div className="row">
-            <div className="col-12 col-md-6 mb-3">
-              <label className="form-label">CPF</label>
-              <input
-                type="text"
-                className="form-control form-control-sm"
-                placeholder="CPF"
-                maxLength="11"
-                value={cpf}
-                onChange={(e) => setCpf(e.target.value)}
-              />
-            </div>
-            <div className="col-12 col-md-6 mb-3">
-              <label className="form-label">Profissão</label>
-              <select
-                className="form-select form-select-sm"
-                value={nicho}
-                onChange={(e) => setNicho(e.target.value)}
-              >
-                <option value="Cabeleireiro">Cabeleireiro</option>
-                <option value="Manicure">Manicure</option>
-                <option value="Depilador">Depilador</option>
-              </select>
-            </div>
-          </div>
+      <div className="container-sm py-4">
+        <h2 className="text-center mb-4 fw-semibold">Cadastro de Funcionários</h2>
+        <div className="card shadow-sm">
+          <div className="card-body">
+            <form className="mb-0" onSubmit={handleForm}>
+              <div className="mb-3">
+                <label className="form-label text-muted">Nome</label>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="Digite o nome completo"
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
+                ></input>
+              </div>
+              <div className="row">
+                <div className="col-12 col-md-6 mb-3">
+                  <label className="form-label text-muted">CPF</label>
+                  <input
+                    type="text"
+                      className="form-control form-control-sm"
+                    placeholder="Digite apenas números"
+                    maxLength="11"
+                    value={cpf}
+                    onChange={(e) => setCpf(e.target.value)}
+                  />
+                </div>
+                <div className="col-12 col-md-6 mb-3">
+                  <label className="form-label text-muted">Profissão</label>
+                  <select
+                    className="form-select form-select-sm"
+                    value={nicho}
+                    onChange={(e) => setNicho(e.target.value)}
+                  >
+                    <option value="Cabeleireiro">Cabeleireiro</option>
+                    <option value="Manicure">Manicure</option>
+                    <option value="Depilador">Depilador</option>
+                  </select>
+                </div>
+              </div>
 
-          <button type="submit" className="btn btn-primary"><FiPlus color="red"></FiPlus></button>
-        </form>
+              <div className="text-center">
+                <button type="submit" className="btn btn-success" style={{width: "200px"}}>Cadastrar</button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
 
       <div className="container my-4">

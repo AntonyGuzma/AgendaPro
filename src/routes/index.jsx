@@ -5,6 +5,7 @@ import Painel from "../pages/Painel";
 import Register from "../pages/Register";
 import Private from "./Private";
 import { AuthProvider } from "../contexts/auth";
+import Atendimentos from "../pages/Atendimentos";
 
 // Componente com configuração de Roteamento 
 function RoutesApp(){
@@ -16,6 +17,7 @@ function RoutesApp(){
                         <Route path="/painel" element={ <Painel/> }></Route>
                         <Route path="/register" element={ <Register/> }></Route>
                         <Route path="/home" element={  <Private> <Home/> </Private>  }></Route>
+                        <Route path="/atendimentos" element={  <Private> <Atendimentos/> </Private>  }></Route>
                     
                         <Route path="*" element={ <Private> <Home/> </Private>  }></Route> 
                 </Routes>
