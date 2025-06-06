@@ -1,5 +1,5 @@
 import { db } from "../firebaseConnection";
-import { collection, doc, updateDoc, addDoc, Timestamp, serverTimestamp, deleteDoc, query, onSnapshot } from "firebase/firestore";
+import { collection, doc, updateDoc, addDoc, Timestamp, serverTimestamp, deleteDoc, query, onSnapshot, getDoc } from "firebase/firestore";
 import { useState, useEffect } from "react";
 import { FiTrash2 } from "react-icons/fi";
 import { BiEditAlt } from "react-icons/bi";
@@ -73,12 +73,19 @@ export default function TabelaFuncionarios() {
     const docRef = doc(db, "funcionarios", idDoc);
     const payload = { status: novoStatus };
 
-    if (novoStatus === "disponivel") {
-      registrarAtendimento(idDoc)
-      payload.ultimoStatusDisponivel = serverTimestamp();
-    }
-
     try {
+      // Buscar o status atual antes de atualizar
+      const docSnap = await getDoc(docRef);
+      const statusAtual = docSnap.data().status;
+
+      if (novoStatus === "disponivel") {
+        // Só registra atendimento e zera o tempo se vier do status 'ocupado'
+        if (statusAtual === "ocupado") {
+          registrarAtendimento(idDoc);
+          payload.ultimoStatusDisponivel = serverTimestamp();
+        }
+      }
+
       await updateDoc(docRef, payload);
     } catch (error) {
       console.error("Erro ao atualizar status:", error);
@@ -133,20 +140,29 @@ export default function TabelaFuncionarios() {
   // 🔧 Função de ordenação
   const ordenarFuncionarios = (funcs) => {
     return [...funcs].sort((a, b) => {
+      // Primeiro, ordenamos por status com prioridade específica
       if (a.status !== b.status) {
         if (a.status === 'disponivel') return -1;
         if (b.status === 'disponivel') return 1;
+        if (a.status === 'indisponível') return -1;
+        if (b.status === 'indisponível') return 1;
+        return 0;
       }
 
-      if (a.status === 'disponivel' && b.status === 'disponivel') {
-        const timeA = a.ultimoStatusDisponivel?.toDate()?.getTime() || 0;
-        const timeB = b.ultimoStatusDisponivel?.toDate()?.getTime() || 0;
-        return timeA - timeB;
-      }
-
-      const timeA = a.ultimoStatusDisponivel?.toDate()?.getTime() || 0;
-      const timeB = b.ultimoStatusDisponivel?.toDate()?.getTime() || 0;
-      return timeB - timeA;
+      // Se chegou aqui, os status são iguais
+      // Ordenamos pelo tempo dentro do mesmo status (do maior para o menor)
+      const timeA = a.ultimoStatusDisponivel?.toDate()?.getTime() || -1; // -1 para quem não tem registro
+      const timeB = b.ultimoStatusDisponivel?.toDate()?.getTime() || -1; // -1 para quem não tem registro
+      
+      // Se ambos não têm registro, mantém a ordem original
+      if (timeA === -1 && timeB === -1) return 0;
+      // Se apenas A não tem registro, coloca B na frente
+      if (timeA === -1) return 1;
+      // Se apenas B não tem registro, coloca A na frente
+      if (timeB === -1) return -1;
+      
+      // Se ambos têm registro, ordena do maior para o menor
+      return timeA - timeB;
     });
   };
 
@@ -199,44 +215,51 @@ export default function TabelaFuncionarios() {
           </tr>
         </thead>
         <tbody>
-          {funcionariosAgrupados.map(([nicho, funcs]) => {
-          const funcsOrdenados = ordenarFuncionarios(funcs);
-          
-          return funcsOrdenados.map((func, index) => (
-            <tr key={func.idDoc}>
-              {index === 0 && (
-                <td rowSpan={funcsOrdenados.length}>
-                  {nicho}
-                </td>
-              )}
-              <td>{func.nome}</td>
-              <td>
-                <select
-                  value={func.status}
-                  onChange={(e) => handleStatusChange(func.idDoc, e.target.value)}
-                  className="form-select form-select-sm"
-                >
-                  <option value="disponivel">Disponível</option>
-                  <option value="ocupado">Ocupado</option>
-                  <option value="indisponível">Indisponível</option>
-                </select>
-              </td>
-              <td>{formatarTempo(func.ultimoStatusDisponivel)}</td>
-              <td className="text-center">
-                {atendimentosPorFuncionario[func.idDoc] || 0} atendimentos
-              </td>
-              <td>
-                <button onClick={() => handleEdit(func)} className="btn btn-link me-2">
-                  <BiEditAlt />
-                </button>
-                <button onClick={() => handleDelete(func.idDoc)} className="btn btn-link">
-                  <FiTrash2 color="red" />
-                </button>
+          {funcionariosAgrupados.length === 0 ? (
+            <tr>
+              <td colSpan="6" className="text-center">
+                Nenhum funcionário encontrado.
               </td>
             </tr>
-          ));
-        })}
-      </tbody>
+          ) : (
+            funcionariosAgrupados.map(([nicho, funcs]) => {
+            const funcsOrdenados = ordenarFuncionarios(funcs);
+            
+            return funcsOrdenados.map((func, index) => (
+              <tr key={func.idDoc}>
+                {index === 0 && (
+                  <td rowSpan={funcsOrdenados.length}>
+                    {nicho}
+                  </td>
+                )}
+                <td>{func.nome}</td>
+                <td>
+                  <select
+                    value={func.status}
+                    onChange={(e) => handleStatusChange(func.idDoc, e.target.value)}
+                    className="form-select form-select-sm"
+                  >
+                    <option value="disponivel">Disponível</option>
+                    <option value="ocupado">Ocupado</option>
+                    <option value="indisponível">Indisponível</option>
+                  </select>
+                </td>
+                <td>{formatarTempo(func.ultimoStatusDisponivel)}</td>
+                <td className="text-center">
+                  {atendimentosPorFuncionario[func.idDoc] || 0} atendimentos
+                </td>
+                <td>
+                  <button onClick={() => handleEdit(func)} className="btn btn-link me-2">
+                    <BiEditAlt />
+                  </button>
+                  <button onClick={() => handleDelete(func.idDoc)} className="btn btn-link">
+                    <FiTrash2 color="red" />
+                  </button>
+                </td>
+              </tr>
+            ));
+          }))}
+        </tbody>
       </table>
       </div>
       
