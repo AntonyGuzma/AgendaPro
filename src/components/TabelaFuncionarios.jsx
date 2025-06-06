@@ -194,7 +194,7 @@ export default function TabelaFuncionarios() {
             <th>Nome</th>
             <th>Status</th>
             <th>Tempo</th>
-            <th className="text-truncate-custom">Quantidade de Atendimentos</th>
+            <th className="text-truncate-custom">Atendimentos</th>
             <th>Ações</th>
           </tr>
         </thead>

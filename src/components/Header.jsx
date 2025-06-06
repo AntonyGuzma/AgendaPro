@@ -3,8 +3,8 @@ import { FaUserCircle } from "react-icons/fa";
 import { AuthContext } from "../contexts/auth";
 import { useContext } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import logo from "../assets/logo.png";
-
+import logo from "../assets/logo-svg.svg";
+import { BsPersonCircle } from "react-icons/bs";
 // mudança pra testar commit
 function Header() {
   const navigate = useNavigate();
@@ -16,15 +16,53 @@ function Header() {
   }
 
   return (
-    <Navbar bg="light" expand="lg">
+    // Menu hamburguer so aparecer quando tela tiver > "sm"
+    <Navbar expand="md" style={{ backgroundColor: "var(--bs-warning-bg-subtle)"}}>
       <Container>
-        <Navbar.Brand href={"/home"}><img src={''}></img>Logo</Navbar.Brand>
+        <Navbar.Brand href={"/home"}><img src={logo} style={{width:"50px", height:"60px"}}></img></Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
-          <Nav className="m-auto">
-            <NavLink to={"/home"}> Home </NavLink>
-            <NavLink to={"/painel"}> Painel </NavLink>
-            <NavLink to={"/atendimentos"}> Atendimentos </NavLink>
+          <Nav className="ms-auto d-flex align-items-center">
+            <NavLink
+              to="/home"
+              className={({ isActive }) =>
+                `nav-link fs-5 mx-2 text-decoration-none ${
+                  isActive ? "fw-semibold text-decoration-underline" : "text-dark"
+                }`
+              }
+            >
+              Home
+            </NavLink>
+            <NavLink
+              to="/painel"
+              className={({ isActive }) =>
+                `nav-link fs-5 mx-2 text-decoration-none ${
+                  isActive ? "fw-semibold text-decoration-underline" : "text-dark"
+                }`
+              }
+            >
+              Painel
+            </NavLink>
+            <NavLink
+              to="/atendimentos"
+              className={({ isActive }) =>
+                `nav-link fs-5 mx-2 text-decoration-none ${
+                  isActive ? "fw-semibold text-decoration-underline" : "text-dark"
+                }`
+              }
+            >
+              Atendimentos
+            </NavLink>
+             {/* Dropdown de Login/Logout */}
+            <Dropdown className="mx-2">
+              <Dropdown.Toggle split variant="light" id="dropdown-basic" className="fs-5"  style={{ border: "none" ,backgroundColor: "var(--bs-warning-bg-subtle)"}}>
+                <BsPersonCircle className="fs-2"/>
+              </Dropdown.Toggle>
+
+              <Dropdown.Menu>
+                <Dropdown.Item href="">Sign In</Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown>
           </Nav>
         </Navbar.Collapse>
       </Container>

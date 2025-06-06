@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { db } from '../../firebaseConnection';
 import { collection, query, onSnapshot, enableNetwork, disableNetwork, doc, getDoc } from 'firebase/firestore';
 import Header from '../../components/Header';
+import Spinner from '../../components/Spinner'
 // comentário só pra testar estratégia de controle de versão  - segundo teste
 export default function Atendimentos() {
   const [atendimentos, setAtendimentos] = useState([]);
@@ -186,14 +187,7 @@ export default function Atendimentos() {
               >
                 {error}
               </div>
-            ) : loading ? (
-              <div className="text-center py-4">
-                <div className="spinner-border text-primary" role="status">
-                  <span className="visually-hidden">Carregando...</span>
-                </div>
-                <p className="mt-2">Carregando atendimentos...</p>
-              </div>
-            ) : (
+            ) : loading ? <Spinner/> : (
               <>
                 <div className="row mb-4">
                   <div className="col-md-4">
