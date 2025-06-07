@@ -1,6 +1,7 @@
 import { db } from "../firebaseConnection";
 import { collection, doc, updateDoc, addDoc, Timestamp, serverTimestamp, deleteDoc, query, onSnapshot } from "firebase/firestore";
 import { useState, useEffect } from "react";
+import { IoSearchCircleSharp } from "react-icons/io5";
 import { FiTrash2 } from "react-icons/fi";
 import { BiEditAlt } from "react-icons/bi";
 import { formatarTempo } from "../utils/formatarTempo";
@@ -158,7 +159,7 @@ export default function TabelaFuncionarios() {
       <div className="row mb-4">
         <div className="col-md-6">
           <div className="input-group">
-            <span className="input-group-text">🔍</span>
+            <span className="input-group-text"><IoSearchCircleSharp className="fs-4"/></span>
             <input
               type="text"
               className="form-control"

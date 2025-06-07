@@ -4,7 +4,7 @@ import { AuthContext } from "../contexts/auth";
 import { useContext } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import logo from "../assets/logo-svg.svg";
-import { BsPersonCircle } from "react-icons/bs";
+import { VscAccount } from "react-icons/vsc";
 // mudança pra testar commit
 function Header() {
   const navigate = useNavigate();
@@ -56,11 +56,11 @@ function Header() {
              {/* Dropdown de Login/Logout */}
             <Dropdown className="mx-2">
               <Dropdown.Toggle split variant="light" id="dropdown-basic" className="fs-5"  style={{ border: "none" ,backgroundColor: "var(--bs-warning-bg-subtle)"}}>
-                <BsPersonCircle className="fs-2"/>
+                <VscAccount  className="fs-2"/>
               </Dropdown.Toggle>
 
               <Dropdown.Menu>
-                <Dropdown.Item href="">Sign In</Dropdown.Item>
+                <Dropdown.Item onClick={Sair}>Sair</Dropdown.Item>
               </Dropdown.Menu>
             </Dropdown>
           </Nav>
