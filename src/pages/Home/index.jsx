@@ -16,7 +16,7 @@ function Home() {
   async function handleForm(e){
     e.preventDefault();
     
-    // Vaerificar valores Nulos
+    // Verificar valores Nulos
     if (!nome || !cpf || !nicho) {
       alert("Preencha todos os campos.");
       return;
@@ -28,26 +28,24 @@ function Home() {
       return;
     }
 
-    await addDoc(collection(db, "funcionarios"), {
-      nome: nome,
-      cpf: cpf,
-      nicho: nicho,
-      status: "disponivel",
-      created: new Date(),
-      userUid: user?.uid 
-    })
-    .then(() => {
-      console.log("tarefa cadastrada")
-      setCpf('')
-      setNicho('')
-      setNome('')
-    })
-    .catch((error) => {
-      console.log("Error ao registrar: ", error)
-    })
-
-    console.log(validarCPF(cpf))
-    console.log(nome, cpf, nicho)
+    try {
+      await addDoc(collection(db, "funcionarios"), {
+        nome: nome,
+        cpf: cpf,
+        nicho: nicho,
+        status: "disponivel",
+        created: new Date(),
+        userUid: user?.uid 
+      });
+      
+      alert("Funcionário cadastrado com sucesso!");
+      setCpf('');
+      setNicho('Cabeleireiro');
+      setNome('');
+    } catch (error) {
+      console.error("Erro ao registrar:", error);
+      alert("Erro ao cadastrar funcionário: " + error.message);
+    }
   }
 
   return (
