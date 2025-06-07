@@ -141,19 +141,29 @@ export default function TabelaFuncionarios() {
   // 🔧 Função de ordenação
   const ordenarFuncionarios = (funcs) => {
     return [...funcs].sort((a, b) => {
-      // Primeiro, ordenamos por status com prioridade específica
-      if (a.status !== b.status) {
-        if (a.status === 'disponivel') return -1;
-        if (b.status === 'disponivel') return 1;
-        if (a.status === 'indisponível') return -1;
-        if (b.status === 'indisponível') return 1;
-        return 0;
+      // Se ambos são ocupados, ordena pelo tempo
+      if (a.status === 'ocupado' && b.status === 'ocupado') {
+        const timeA = a.ultimoStatusDisponivel?.toDate()?.getTime() || -1;
+        const timeB = b.ultimoStatusDisponivel?.toDate()?.getTime() || -1;
+        
+        // Se ambos não têm registro, mantém a ordem original
+        if (timeA === -1 && timeB === -1) return 0;
+        // Se apenas A não tem registro, coloca B na frente
+        if (timeA === -1) return 1;
+        // Se apenas B não tem registro, coloca A na frente
+        if (timeB === -1) return -1;
+        
+        // Ordena do maior para o menor tempo
+        return timeA - timeB;
       }
 
-      // Se chegou aqui, os status são iguais
-      // Ordenamos pelo tempo dentro do mesmo status (do maior para o menor)
-      const timeA = a.ultimoStatusDisponivel?.toDate()?.getTime() || -1; // -1 para quem não tem registro
-      const timeB = b.ultimoStatusDisponivel?.toDate()?.getTime() || -1; // -1 para quem não tem registro
+      // Se só um é ocupado, ele vai pra trás
+      if (a.status === 'ocupado') return 1;
+      if (b.status === 'ocupado') return -1;
+
+      // Para disponível e indisponível, ordena só pelo tempo
+      const timeA = a.ultimoStatusDisponivel?.toDate()?.getTime() || -1;
+      const timeB = b.ultimoStatusDisponivel?.toDate()?.getTime() || -1;
       
       // Se ambos não têm registro, mantém a ordem original
       if (timeA === -1 && timeB === -1) return 0;
@@ -162,7 +172,7 @@ export default function TabelaFuncionarios() {
       // Se apenas B não tem registro, coloca A na frente
       if (timeB === -1) return -1;
       
-      // Se ambos têm registro, ordena do maior para o menor
+      // Ordena do maior para o menor tempo
       return timeA - timeB;
     });
   };
