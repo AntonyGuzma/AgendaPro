@@ -49,8 +49,8 @@ function Login() {
               id="senha"
             />
           </div>
-          <button type="submit" className="btn btn-primary mb-2 w-100">Entrar</button>
-          <Link to="/register">Não possui conta? Cadastre-se</Link>
+          <button type="submit" className="btn btn-secondary mb-2 w-100">Entrar</button>
+          <span>Não possui conta? <Link to="/register"> Cadastre-se</Link></span>
         </form>
       </div>
     </div>

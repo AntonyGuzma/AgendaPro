@@ -1,6 +1,6 @@
 // utils/validarCPF.js
-
-export function validarCPF(cpf) {
+export function validarCPF(cpf, funcionarios) {
+  const cpfJaExiste = funcionarios.some(func => func.cpf === cpf);
   // Remover caracteres não numéricos (como pontos e traços)
   cpf = cpf.replace(/[^\d]+/g, '');
 
@@ -37,6 +37,11 @@ export function validarCPF(cpf) {
     resto = 0;
   }
   if (resto !== parseInt(cpf.charAt(10))) {
+    return false;
+  }
+
+  if(cpfJaExiste){
+    console.log('CPF JÁ EXISTE!')
     return false;
   }
 

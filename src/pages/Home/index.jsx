@@ -6,11 +6,13 @@ import { addDoc, collection } from "firebase/firestore";
 import Header from "../../components/Header";
 import TabelaFuncionarios from "../../components/TabelaFuncionarios";
 import { FiPlus } from "react-icons/fi";
+import { useFuncionarioContext } from "../../contexts/FuncionarioContext";
 
 function Home() {
   const [nome, setNome] = useState("");
   const [cpf, setCpf] = useState("");
   const [nicho, setNicho] = useState("Cabeleireiro");
+  const { funcionarios } = useFuncionarioContext()
   const { Logout, user } =  useContext(AuthContext);
 
   async function handleForm(e){
@@ -23,7 +25,7 @@ function Home() {
     }
 
     // Validação do CPF
-    if (!validarCPF(cpf)) {
+    if (!validarCPF(cpf, funcionarios)) {
       alert("CPF inválido.");
       return;
     }
