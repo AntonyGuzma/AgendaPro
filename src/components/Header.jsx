@@ -54,13 +54,13 @@ function Header() {
               Atendimentos
             </NavLink>
              {/* Dropdown de Login/Logout */}
-            <Dropdown className="mx-2">
-              <Dropdown.Toggle split variant="light" id="dropdown-basic" className="fs-5"  style={{ border: "none" ,backgroundColor: "var(--bs-warning-bg-subtle)"}}>
+            <Dropdown className="mx-2 d-flex justify-content-center justify-content-md-start">
+              <Dropdown.Toggle split variant="light" id="dropdown-basic" className="fs-5 px-2 py-1"  style={{ border: "none" ,backgroundColor: "var(--bs-warning-bg-subtle)"}}>
                 <VscAccount  className="fs-2"/>
               </Dropdown.Toggle>
 
               <Dropdown.Menu>
-                <Dropdown.Item onClick={Sair}>Sair</Dropdown.Item>
+                <Dropdown.Item onClick={Sair} style={{ backgroundColor: 'transparent', color: 'inherit' }}>Sair</Dropdown.Item>
               </Dropdown.Menu>
             </Dropdown>
           </Nav>

@@ -7,6 +7,9 @@ import Header from "../../components/Header";
 import TabelaFuncionarios from "../../components/TabelaFuncionarios";
 import { FiPlus } from "react-icons/fi";
 import { useFuncionarioContext } from "../../contexts/FuncionarioContext";
+import { ToastContainer, Zoom } from "react-toastify";
+import { notifyError } from "../../utils/toasts";
+import { Spinner } from "react-bootstrap";
 
 function Home() {
   const [nome, setNome] = useState("");
@@ -20,7 +23,7 @@ function Home() {
     
     // Verificar valores Nulos
     if (!nome || !cpf || !nicho) {
-      alert("Preencha todos os campos.");
+      notifyError("Peencha todos os campos opa")
       return;
     }
 
@@ -96,15 +99,14 @@ function Home() {
 
               <div className="text-center">
                 <button type="submit" className="btn btn-success" style={{width: "200px"}}>Cadastrar</button>
+                <ToastContainer limit={1}/>
               </div>
             </form>
           </div>
         </div>
       </div>
 
-      <div className="container my-4">
-        <TabelaFuncionarios/>
-      </div>
+      <TabelaFuncionarios/>
     </>
   );
 }

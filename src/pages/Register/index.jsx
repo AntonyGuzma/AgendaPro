@@ -1,6 +1,7 @@
 import React, { useState, useContext } from "react"; 
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../contexts/auth";
+import { ToastContainer } from "react-toastify";
 
 function Register() {
   // criando as variaveis
@@ -48,9 +49,10 @@ function Register() {
               id="senha"
             />
           </div>
-          <button type="submit" className="btn btn-primary mb-2 w-100 btn-cadastrar">Cadastrar</button>
+          <button type="submit" className="btn btn-secondary mb-2 w-100">Cadastrar</button>
         </form>
-        <Link className="m-auto" to="/">Já possui conta? Faça Login</Link>
+        <ToastContainer/>
+          <span>Não possui conta? <Link to="/register"> Cadastre-se</Link></span>
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { IoSearchCircleSharp } from "react-icons/io5";
 import { FiTrash2 } from "react-icons/fi";
 import { BiEditAlt } from "react-icons/bi";
 import { formatarTempo } from "../utils/formatarTempo";
+import { notifyError, notifySucess, showConfirmationToast } from "../utils/toasts";
 
 export default function TabelaFuncionarios() {
   const [funcionarios, setFuncionarios] = useState([]);
@@ -100,16 +101,22 @@ export default function TabelaFuncionarios() {
   }
 
   async function handleDelete(idDoc) {
-    if (window.confirm("Tem certeza que deseja excluir este funcionário?")) {
-      const docRef = doc(db, "funcionarios", idDoc);
-      try {
-        await deleteDoc(docRef);
-        alert("Funcionário excluído com sucesso!");
-      } catch (error) {
-        console.error("Erro ao excluir:", error);
-        alert("Erro ao excluir funcionário.");
-      }
+    const confirmarExclusao = async () => {
+    const docRef = doc(db, "funcionarios", idDoc);
+    try {
+      await deleteDoc(docRef);
+      notifySucess("Funcionário excluído com sucesso!");
+    } catch (error) {
+      console.error("Erro ao excluir:", error);
+      notifyError("Erro ao excluir funcionário.");
     }
+  };
+
+  showConfirmationToast(
+    "Tem certeza que deseja excluir este funcionário?",
+    confirmarExclusao,
+    () => console.log("Exclusão cancelada")
+  );
   }
 
   async function handleSave(e) {
@@ -203,7 +210,7 @@ export default function TabelaFuncionarios() {
         </div>
       </div>
 
-      <div className="table-responsive">
+      <div className="table-responsive container my-4">
       <table className="table table-hover">
         <thead>
           <tr>
@@ -238,7 +245,7 @@ export default function TabelaFuncionarios() {
                   <select
                     value={func.status}
                     onChange={(e) => handleStatusChange(func.idDoc, e.target.value)}
-                    className="form-select form-select-sm"
+                    className="form-selec max-w-[150px] form-select-sm text-gray-900 bg-white w-full"
                   >
                     <option value="disponivel">Disponível</option>
                     <option value="ocupado">Ocupado</option>
@@ -250,10 +257,10 @@ export default function TabelaFuncionarios() {
                   {atendimentosPorFuncionario[func.idDoc] || 0} atendimentos
                 </td>
                 <td>
-                  <button onClick={() => handleEdit(func)} className="btn btn-link me-2">
+                  <button type="button" onClick={() => handleEdit(func)} className="btn btn-link me-2">
                     <BiEditAlt />
                   </button>
-                  <button onClick={() => handleDelete(func.idDoc)} className="btn btn-link">
+                  <button type="button" onClick={() => handleDelete(func.idDoc)} className="btn btn-link">
                     <FiTrash2 color="red" />
                   </button>
                 </td>

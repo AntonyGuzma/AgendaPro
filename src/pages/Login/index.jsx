@@ -1,6 +1,8 @@
 import React, { useContext, useState } from "react"; 
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../contexts/auth";
+import { notifyError, notifySucess } from "../../utils/toasts";
+import { ToastContainer } from "react-toastify"; 
 
 function Login() {
   // criando as variaveis
@@ -8,17 +10,23 @@ function Login() {
   const [password, setPassword] = useState("");
   const { Login } = useContext(AuthContext);
   const navigate = useNavigate();
+  
+  async function handleSubmit(e) {
+  e.preventDefault();
 
-  async function handleSubmit(e){
-    e.preventDefault()
-
-    if(email !== '' && password != ''){
-      await Login(email, password)
-      .then(() => { navigate("/home") })
-    }else{
-      alert('Preencha os campos');
+  if (email.trim() !== '' && password.trim() !== '') {
+    try {
+      await Login(email, password);
+      notifySucess("Logado com sucesso");
+      setTimeout(() => navigate("/home"), 3000);
+    } catch (error) {
+      notifyError("Erro ao fazer login");
+      console.error(error);
     }
+  } else {
+    notifyError("Preencha todos os campos");
   }
+}
 
   return (
     <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
@@ -50,6 +58,7 @@ function Login() {
             />
           </div>
           <button type="submit" className="btn btn-secondary mb-2 w-100">Entrar</button>
+          <ToastContainer/>
           <span>Não possui conta? <Link to="/register"> Cadastre-se</Link></span>
         </form>
       </div>
