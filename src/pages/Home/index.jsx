@@ -2,7 +2,7 @@ import { useContext, useState } from "react";
 import { AuthContext } from "../../contexts/auth";
 import { validarCPF } from "../../utils/validarcpf";
 import { db } from "../../firebaseConnection";
-import { addDoc, collection } from "firebase/firestore";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import Header from "../../components/Header";
 import TabelaFuncionarios from "../../components/TabelaFuncionarios";
 import { FiPlus } from "react-icons/fi";
@@ -39,6 +39,7 @@ function Home() {
         cpf: cpf,
         nicho: nicho,
         status: "disponivel",
+        ultimoStatusDisponivel: serverTimestamp(),
         created: new Date(),
         userUid: user?.uid 
       });
