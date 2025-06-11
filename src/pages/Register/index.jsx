@@ -52,7 +52,7 @@ function Register() {
           <button type="submit" className="btn btn-secondary mb-2 w-100">Cadastrar</button>
         </form>
         <ToastContainer/>
-          <span>Não possui conta? <Link to="/register"> Cadastre-se</Link></span>
+          <span>Já possui conta? <Link to="/"> Faça Login</Link></span>
       </div>
     </div>
   );

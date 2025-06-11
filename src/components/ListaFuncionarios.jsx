@@ -7,7 +7,7 @@ function ListaFuncionarios() {
 
   // Separar Todas as Profissoes Existentes em outra lista 
   const profissoes = [...new Set(funcionarios.map(func => func.nicho))];
- 
+  
   return (      
     <div className="container py-4">
       <h2 className="text-center mb-4 fw-semibold">Painel de Funcionários</h2>
@@ -29,7 +29,41 @@ function ListaFuncionarios() {
                     <tbody>
                       {funcionarios
                         .filter(func => func.nicho === profissao)
-                        .sort((a, b) => a.nome.localeCompare(b.nome))
+                        .sort((a, b) => {
+                        // Se ambos são ocupados, ordena pelo tempo
+                        if (a.status === 'ocupado' && b.status === 'ocupado') {
+                          const timeA = a.ultimoStatusDisponivel?.toDate()?.getTime() || -1;
+                          const timeB = b.ultimoStatusDisponivel?.toDate()?.getTime() || -1;
+                          
+                          // Se ambos não têm registro, mantém a ordem original
+                          if (timeA === -1 && timeB === -1) return 0;
+                          // Se apenas A não tem registro, coloca B na frente
+                          if (timeA === -1) return 1;
+                          // Se apenas B não tem registro, coloca A na frente
+                          if (timeB === -1) return -1;
+                          
+                          // Ordena do maior para o menor tempo
+                          return timeA - timeB;
+                        }
+
+                        // Se só um é ocupado, ele vai pra trás
+                        if (a.status === 'ocupado') return 1;
+                        if (b.status === 'ocupado') return -1;
+
+                        // Para disponível e indisponível, ordena só pelo tempo
+                        const timeA = a.ultimoStatusDisponivel?.toDate()?.getTime() || -1;
+                        const timeB = b.ultimoStatusDisponivel?.toDate()?.getTime() || -1;
+                        
+                        // Se ambos não têm registro, mantém a ordem original
+                        if (timeA === -1 && timeB === -1) return 0;
+                        // Se apenas A não tem registro, coloca B na frente
+                        if (timeA === -1) return 1;
+                        // Se apenas B não tem registro, coloca A na frente
+                        if (timeB === -1) return -1;
+                        
+                        // Ordena do maior para o menor tempo
+                        return timeA - timeB;
+                      })
                         .map(func => (
                           <tr key={func.id}>
                             <td>{func.nome}</td>

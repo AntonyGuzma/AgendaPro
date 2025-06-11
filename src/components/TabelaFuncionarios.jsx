@@ -33,7 +33,7 @@ export default function TabelaFuncionarios() {
       return () => unsub();
     } catch (error) {
       console.error("Erro ao configurar listener:", error);
-      alert("Erro ao carregar funcionários: " + error.message);
+      notifyError("Erro ao carregar funcionários: " + error.message)
     }
   }, []);
 
@@ -91,7 +91,7 @@ export default function TabelaFuncionarios() {
       await updateDoc(docRef, payload);
     } catch (error) {
       console.error("Erro ao atualizar status:", error);
-      alert("Erro ao atualizar status: " + error.message);
+      notifyError("Erro ao atualizar status: " + error.message)
     }
   }
 
@@ -128,14 +128,14 @@ export default function TabelaFuncionarios() {
         nicho: editingEmployee.nicho
       });
       setShowModal(false);
-      alert('Dados Alterados com sucesso!');
+      notifySucess('Dados Alterados com sucesso!');
     } catch (error) {
       console.error("Erro ao atualizar:", error);
-      alert("Erro ao atualizar dados.");
+      notifyError("Erro ao atualizar dados.");
     }
   }
 
-  // 🔧 Agrupar por nicho/função
+  // 🔧 Agrupar por nicho/função - objetic.entries: retorna array de arrays com pares chave-valor:
   const funcionariosAgrupados = Object.entries(
     filteredFuncionarios.reduce((groups, func) => {
       const nicho = func.nicho || 'Sem função';
