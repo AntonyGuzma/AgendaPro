@@ -1,5 +1,5 @@
 import { db } from "../firebaseConnection";
-import { collection, doc, updateDoc, addDoc, Timestamp, serverTimestamp, deleteDoc, query, onSnapshot, getDoc } from "firebase/firestore";
+import { collection, doc, updateDoc, addDoc, Timestamp, serverTimestamp, deleteDoc, query, onSnapshot, getDoc, getDocs } from "firebase/firestore";
 import { useState, useEffect } from "react";
 import { IoSearchCircleSharp } from "react-icons/io5";
 import { FiTrash2 } from "react-icons/fi";
@@ -14,6 +14,16 @@ export default function TabelaFuncionarios() {
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [searchNome, setSearchNome] = useState("");
   const [searchNicho, setSearchNicho] = useState("");
+  
+  // Estados para o modal de cliente
+  const [showClienteModal, setShowClienteModal] = useState(false);
+  const [clienteData, setClienteData] = useState({ nome: '', tipoCliente: '' });
+  const [funcionarioParaOcupar, setFuncionarioParaOcupar] = useState(null);
+  
+  // Estados para o modal de detalhes dos atendimentos
+  const [showAtendimentosModal, setShowAtendimentosModal] = useState(false);
+  const [atendimentosDetalhados, setAtendimentosDetalhados] = useState([]);
+  const [funcionarioSelecionado, setFuncionarioSelecionado] = useState(null);
   
   // Buscar todos os funcionários
   useEffect(() => {
@@ -42,10 +52,32 @@ export default function TabelaFuncionarios() {
     const q = query(collection(db, "atendimentos"));
     const unsub = onSnapshot(q, (querySnapshot) => {
       const contagem = {};
+      // Usar fuso horário local para a data de hoje
+      // O zeramento dos atendimentos acontece na virada do dia no fuso horário local
+      const hoje = new Date();
+      const ano = hoje.getFullYear();
+      const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+      const dia = String(hoje.getDate()).padStart(2, '0');
+      const hojeFormatado = `${ano}-${mes}-${dia}`;
+      
       querySnapshot.forEach((doc) => {
         const atendimento = doc.data();
-        const profissionalId = atendimento.profissionalId;
-        contagem[profissionalId] = (contagem[profissionalId] || 0) + 1;
+        // Verifica se o atendimento é do dia atual
+        let dataAtendimento = '';
+        if (atendimento.horario && atendimento.horario.toDate) {
+          // Usar fuso horário local para a data do atendimento
+          const dataAtend = atendimento.horario.toDate();
+          const anoAtend = dataAtend.getFullYear();
+          const mesAtend = String(dataAtend.getMonth() + 1).padStart(2, '0');
+          const diaAtend = String(dataAtend.getDate()).padStart(2, '0');
+          dataAtendimento = `${anoAtend}-${mesAtend}-${diaAtend}`;
+        } else if (atendimento.data) {
+          dataAtendimento = atendimento.data;
+        }
+        if (dataAtendimento === hojeFormatado) {
+          const profissionalId = atendimento.profissionalId;
+          contagem[profissionalId] = (contagem[profissionalId] || 0) + 1;
+        }
       });
       setAtendimentosPorFuncionario(contagem);
     });
@@ -60,14 +92,20 @@ export default function TabelaFuncionarios() {
     return matchNome && matchNicho;
   });
 
-  async function registrarAtendimento(profissionalId) {
+  async function registrarAtendimento(profissionalId, clienteNome, tipoCliente) {
     const dataAtual = new Date();
-    const dataFormatada = dataAtual.toISOString().split('T')[0];
+    // Usar fuso horário local para ambos os campos
+    const ano = dataAtual.getFullYear();
+    const mes = String(dataAtual.getMonth() + 1).padStart(2, '0');
+    const dia = String(dataAtual.getDate()).padStart(2, '0');
+    const dataFormatada = `${ano}-${mes}-${dia}`;
 
     await addDoc(collection(db, 'atendimentos'), {
       profissionalId,
       data: dataFormatada,
-      horario: Timestamp.fromDate(dataAtual)
+      horario: Timestamp.fromDate(dataAtual),
+      cliente: clienteNome,
+      tipoCliente: tipoCliente
     });
   }
 
@@ -80,10 +118,27 @@ export default function TabelaFuncionarios() {
       const docSnap = await getDoc(docRef);
       const statusAtual = docSnap.data().status;
 
+      if (novoStatus === "ocupado") {
+        // Se está mudando para ocupado, mostrar modal para capturar dados do cliente
+        const funcionario = funcionarios.find(f => f.idDoc === idDoc);
+        setFuncionarioParaOcupar(funcionario);
+        setShowClienteModal(true);
+        return; // Não atualiza o status ainda
+      }
+
       if (novoStatus === "disponivel") {
         // Só registra atendimento e zera o tempo se vier do status 'ocupado'
         if (statusAtual === "ocupado") {
-          registrarAtendimento(idDoc);
+          // Buscar dados do cliente armazenados temporariamente
+          const dadosCliente = sessionStorage.getItem(`cliente_${idDoc}`);
+          if (dadosCliente) {
+            const { nome, tipoCliente } = JSON.parse(dadosCliente);
+            await registrarAtendimento(idDoc, nome, tipoCliente);
+            sessionStorage.removeItem(`cliente_${idDoc}`); // Limpa os dados temporários
+          } else {
+            // Fallback: registra sem dados do cliente
+            await registrarAtendimento(idDoc, '', '');
+          }
           payload.ultimoStatusDisponivel = serverTimestamp();
         }
       }
@@ -93,6 +148,107 @@ export default function TabelaFuncionarios() {
       console.error("Erro ao atualizar status:", error);
       notifyError("Erro ao atualizar status: " + error.message)
     }
+  }
+
+  // Função para confirmar dados do cliente e ocupar funcionário
+  async function confirmarCliente() {
+    if (!clienteData.nome.trim() || !clienteData.tipoCliente) {
+      notifyError("Por favor, preencha todos os campos");
+      return;
+    }
+
+    try {
+      const docRef = doc(db, "funcionarios", funcionarioParaOcupar.idDoc);
+      
+      // Armazena dados do cliente temporariamente
+      sessionStorage.setItem(`cliente_${funcionarioParaOcupar.idDoc}`, JSON.stringify(clienteData));
+      
+      // Atualiza status para ocupado
+      await updateDoc(docRef, { status: "ocupado" });
+      
+      // Limpa o modal
+      setShowClienteModal(false);
+      setClienteData({ nome: '', tipoCliente: '' });
+      setFuncionarioParaOcupar(null);
+      
+      notifySucess("Funcionário ocupado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao ocupar funcionário:", error);
+      notifyError("Erro ao ocupar funcionário: " + error.message);
+    }
+  }
+
+  // Função para cancelar ocupação
+  function cancelarOcupacao() {
+    setShowClienteModal(false);
+    setClienteData({ nome: '', tipoCliente: '' });
+    setFuncionarioParaOcupar(null);
+  }
+
+  // Função para buscar atendimentos detalhados de um funcionário
+  async function buscarAtendimentosDetalhados(funcionario) {
+    try {
+      const q = query(collection(db, "atendimentos"));
+      const querySnapshot = await getDocs(q);
+      
+      const atendimentos = [];
+      // Usar fuso horário local para a data de hoje
+      const hoje = new Date();
+      const ano = hoje.getFullYear();
+      const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+      const dia = String(hoje.getDate()).padStart(2, '0');
+      const hojeFormatado = `${ano}-${mes}-${dia}`;
+      
+      querySnapshot.forEach((doc) => {
+        const atendimento = doc.data();
+        let dataAtendimento = '';
+        
+        if (atendimento.horario && atendimento.horario.toDate) {
+          // Usar fuso horário local para a data do atendimento
+          const dataAtend = atendimento.horario.toDate();
+          const anoAtend = dataAtend.getFullYear();
+          const mesAtend = String(dataAtend.getMonth() + 1).padStart(2, '0');
+          const diaAtend = String(dataAtend.getDate()).padStart(2, '0');
+          dataAtendimento = `${anoAtend}-${mesAtend}-${diaAtend}`;
+        } else if (atendimento.data) {
+          dataAtendimento = atendimento.data;
+        }
+        
+        if (dataAtendimento === hojeFormatado && atendimento.profissionalId === funcionario.idDoc) {
+          atendimentos.push({
+            id: doc.id,
+            ...atendimento,
+            horarioFormatado: atendimento.horario?.toDate ? 
+              atendimento.horario.toDate().toLocaleTimeString('pt-BR', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              }) : 'N/A'
+          });
+        }
+      });
+      
+      // Ordenar por horário (mais recente primeiro)
+      atendimentos.sort((a, b) => {
+        if (a.horario?.toDate && b.horario?.toDate) {
+          return b.horario.toDate() - a.horario.toDate();
+        }
+        return 0;
+      });
+      
+      setAtendimentosDetalhados(atendimentos);
+      setFuncionarioSelecionado(funcionario);
+      setShowAtendimentosModal(true);
+    } catch (error) {
+      console.error("Erro ao buscar atendimentos:", error);
+      notifyError("Erro ao buscar atendimentos: " + error.message);
+    }
+  }
+
+  // Função para fechar modal de atendimentos
+  function fecharModalAtendimentos() {
+    setShowAtendimentosModal(false);
+    setAtendimentosDetalhados([]);
+    setFuncionarioSelecionado(null);
   }
 
   function handleEdit(funcionario) {
@@ -227,7 +383,7 @@ export default function TabelaFuncionarios() {
             <th>Função</th>
             <th>Nome</th>
             <th>Status</th>
-            <th>Tempo</th>
+            
             <th className="text-truncate-custom">Atendimentos</th>
             <th>Ações</th>
           </tr>
@@ -262,9 +418,16 @@ export default function TabelaFuncionarios() {
                     <option value="indisponível">Indisponível</option>
                   </select>
                 </td>
-                <td>{formatarTempo(func.ultimoStatusDisponivel)}</td>
+                
                 <td className="text-center">
-                  {atendimentosPorFuncionario[func.idDoc] || 0} atendimentos
+                  <button 
+                    type="button" 
+                    className="btn btn-link p-0 text-decoration-none"
+                    onClick={() => buscarAtendimentosDetalhados(func)}
+                    disabled={!atendimentosPorFuncionario[func.idDoc] || atendimentosPorFuncionario[func.idDoc] === 0}
+                  >
+                    {atendimentosPorFuncionario[func.idDoc] || 0} atendimentos
+                  </button>
                 </td>
                 <td>
                   <button type="button" onClick={() => handleEdit(func)} className="btn btn-link me-2">
@@ -336,6 +499,112 @@ export default function TabelaFuncionarios() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Cliente */}
+      {showClienteModal && (
+        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Ocupar Funcionário</h5>
+                <button type="button" className="btn-close" onClick={cancelarOcupacao}></button>
+              </div>
+              <form onSubmit={(e) => { e.preventDefault(); confirmarCliente(); }}>
+                <div className="modal-body">
+                  <div className="mb-3">
+                    <label className="form-label">Nome do Cliente</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={clienteData.nome}
+                      onChange={(e) => setClienteData({...clienteData, nome: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">Tipo de Cliente</label>
+                    <select
+                      className="form-select"
+                      value={clienteData.tipoCliente}
+                      onChange={(e) => setClienteData({...clienteData, tipoCliente: e.target.value})}
+                      required
+                    >
+                      <option value="">Selecione um tipo</option>
+                      <option value="preferencial">Preferencial</option>
+                      <option value="rotatividade">Rotatividade</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="submit" className="btn btn-primary">
+                    Confirmar
+                  </button>
+                  <button type="button" className="btn btn-secondary" onClick={cancelarOcupacao}>
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Detalhes dos Atendimentos */}
+      {showAtendimentosModal && (
+        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  Atendimentos de {funcionarioSelecionado?.nome} - {new Date().toLocaleDateString('pt-BR')}
+                </h5>
+                <button type="button" className="btn-close" onClick={fecharModalAtendimentos}></button>
+              </div>
+              <div className="modal-body">
+                {atendimentosDetalhados.length === 0 ? (
+                  <p className="text-center text-muted">Nenhum atendimento registrado hoje.</p>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="table table-striped">
+                      <thead>
+                        <tr>
+                          <th>Horário</th>
+                          <th>Cliente</th>
+                          <th>Tipo de Cliente</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {atendimentosDetalhados.map((atendimento) => (
+                          <tr key={atendimento.id}>
+                            <td>{atendimento.horarioFormatado}</td>
+                            <td>{atendimento.cliente || 'N/A'}</td>
+                            <td>
+                              <span className={`badge ${
+                                atendimento.tipoCliente === 'preferencial' 
+                                  ? 'bg-success' 
+                                  : atendimento.tipoCliente === 'rotatividade' 
+                                    ? 'bg-primary' 
+                                    : 'bg-secondary'
+                              }`}>
+                                {atendimento.tipoCliente || 'N/A'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={fecharModalAtendimentos}>
+                  Fechar
+                </button>
+              </div>
             </div>
           </div>
         </div>

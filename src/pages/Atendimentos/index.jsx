@@ -1,16 +1,27 @@
 import { useState, useEffect } from 'react';
 import { db } from '../../firebaseConnection';
-import { collection, query, onSnapshot, enableNetwork, disableNetwork, doc, getDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, enableNetwork, disableNetwork, doc, getDoc, getDocs } from 'firebase/firestore';
 import Header from '../../components/Header';
 import Spinner from '../../components/Spinner'
 // comentário só pra testar estratégia de controle de versão  - segundo teste
 export default function Atendimentos() {
   const [atendimentos, setAtendimentos] = useState([]);
   const [funcionarios, setFuncionarios] = useState({});
-  const [dataFiltro, setDataFiltro] = useState(new Date().toISOString().split('T')[0]);
+  // Usar fuso horário local para inicializar a data do filtro
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+  const dia = String(hoje.getDate()).padStart(2, '0');
+  const dataFiltroInicial = `${ano}-${mes}-${dia}`;
+  const [dataFiltro, setDataFiltro] = useState(dataFiltroInicial);
   const [atendimentosPorProfissional, setAtendimentosPorProfissional] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Estados para o modal de detalhes dos atendimentos
+  const [showAtendimentosModal, setShowAtendimentosModal] = useState(false);
+  const [atendimentosDetalhados, setAtendimentosDetalhados] = useState([]);
+  const [funcionarioSelecionado, setFuncionarioSelecionado] = useState(null);
 
   // Função para buscar dados do funcionário
   async function buscarDadosFuncionario(id) {
@@ -85,7 +96,17 @@ export default function Atendimentos() {
             
             for (const doc of querySnapshot.docs) {
               const data = doc.data();
-              const dataFormatada = data.horario ? new Date(data.horario.seconds * 1000).toISOString().split('T')[0] : '';
+              // Usar fuso horário local para formatação da data
+              let dataFormatada = '';
+              if (data.horario) {
+                const dataAtend = new Date(data.horario.seconds * 1000);
+                const ano = dataAtend.getFullYear();
+                const mes = String(dataAtend.getMonth() + 1).padStart(2, '0');
+                const dia = String(dataAtend.getDate()).padStart(2, '0');
+                dataFormatada = `${ano}-${mes}-${dia}`;
+              } else if (data.data) {
+                dataFormatada = data.data;
+              }
               
               // Buscar dados do funcionário do cache
               const funcionario = funcionarios[data.profissionalId];
@@ -171,6 +192,44 @@ export default function Atendimentos() {
     return acc;
   }, {});
 
+  // Função para buscar atendimentos detalhados de um funcionário
+  async function buscarAtendimentosDetalhados(funcionario) {
+    try {
+      const atendimentosFiltrados = atendimentos.filter(atend => 
+        atend.dataFormatada === dataFiltro && 
+        atend.profissionalId === funcionario.id
+      );
+      
+      // Ordenar por horário (mais recente primeiro)
+      const atendimentosOrdenados = atendimentosFiltrados.sort((a, b) => {
+        if (a.horario?.toDate && b.horario?.toDate) {
+          return b.horario.toDate() - a.horario.toDate();
+        }
+        return 0;
+      }).map(atendimento => ({
+        ...atendimento,
+        horarioFormatado: atendimento.horario?.toDate ? 
+          atendimento.horario.toDate().toLocaleTimeString('pt-BR', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          }) : 'N/A'
+      }));
+      
+      setAtendimentosDetalhados(atendimentosOrdenados);
+      setFuncionarioSelecionado(funcionario);
+      setShowAtendimentosModal(true);
+    } catch (error) {
+      console.error("Erro ao buscar atendimentos:", error);
+    }
+  }
+
+  // Função para fechar modal de atendimentos
+  function fecharModalAtendimentos() {
+    setShowAtendimentosModal(false);
+    setAtendimentosDetalhados([]);
+    setFuncionarioSelecionado(null);
+  }
+
   return (
     <>
       <Header />
@@ -232,9 +291,16 @@ export default function Atendimentos() {
                             )}
                             <td className="align-middle">{dado.nome}</td>
                             <td className="align-middle text-center">
-                              <span className="badge bg-secondary">
-                                {dado.quantidade}
-                              </span>
+                              <button 
+                                type="button" 
+                                className="btn btn-link p-0 text-decoration-none"
+                                onClick={() => buscarAtendimentosDetalhados(dado)}
+                                disabled={!dado.quantidade || dado.quantidade === 0}
+                              >
+                                <span className="badge bg-secondary">
+                                  {dado.quantidade}
+                                </span>
+                              </button>
                             </td>
                           </tr>
                         ))
@@ -247,6 +313,63 @@ export default function Atendimentos() {
           </div>
         </div>
       </div>
+
+      {/* Modal de Detalhes dos Atendimentos */}
+      {showAtendimentosModal && (
+        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  Atendimentos de {funcionarioSelecionado?.nome} - {new Date(dataFiltro).toLocaleDateString('pt-BR')}
+                </h5>
+                <button type="button" className="btn-close" onClick={fecharModalAtendimentos}></button>
+              </div>
+              <div className="modal-body">
+                {atendimentosDetalhados.length === 0 ? (
+                  <p className="text-center text-muted">Nenhum atendimento registrado nesta data.</p>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="table table-striped">
+                      <thead>
+                        <tr>
+                          <th>Horário</th>
+                          <th>Cliente</th>
+                          <th>Tipo de Cliente</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {atendimentosDetalhados.map((atendimento) => (
+                          <tr key={atendimento.idDoc}>
+                            <td>{atendimento.horarioFormatado}</td>
+                            <td>{atendimento.cliente || 'N/A'}</td>
+                            <td>
+                              <span className={`badge ${
+                                atendimento.tipoCliente === 'preferencial' 
+                                  ? 'bg-success' 
+                                  : atendimento.tipoCliente === 'rotatividade' 
+                                    ? 'bg-primary' 
+                                    : 'bg-secondary'
+                              }`}>
+                                {atendimento.tipoCliente || 'N/A'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={fecharModalAtendimentos}>
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 } 
