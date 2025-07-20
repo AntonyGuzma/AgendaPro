@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db } from '../../firebaseConnection';
-import { collection, query, onSnapshot, enableNetwork, disableNetwork, doc, getDoc, getDocs } from 'firebase/firestore';
+import { collection, query, onSnapshot, enableNetwork, disableNetwork, doc, getDoc, getDocs, addDoc, Timestamp } from 'firebase/firestore';
 import Header from '../../components/Header';
 import Spinner from '../../components/Spinner'
 // comentário só pra testar estratégia de controle de versão  - segundo teste
@@ -22,6 +22,7 @@ export default function Atendimentos() {
   const [showAtendimentosModal, setShowAtendimentosModal] = useState(false);
   const [atendimentosDetalhados, setAtendimentosDetalhados] = useState([]);
   const [funcionarioSelecionado, setFuncionarioSelecionado] = useState(null);
+  const [dataFiltroAtendimento, setDataFiltroAtendimento] = useState('');
 
   // Função para buscar dados do funcionário
   async function buscarDadosFuncionario(id) {
@@ -195,6 +196,12 @@ export default function Atendimentos() {
   // Função para buscar atendimentos detalhados de um funcionário
   async function buscarAtendimentosDetalhados(funcionario) {
     try {
+      // Usa a data do filtro principal para exibir no modal (formato dd/mm/yyyy)
+      setDataFiltroAtendimento(
+        dataFiltro.split('-').reverse().join('/')
+      );
+
+      // Filtra os atendimentos pela data do filtro principal e pelo funcionário
       const atendimentosFiltrados = atendimentos.filter(atend => 
         atend.dataFormatada === dataFiltro && 
         atend.profissionalId === funcionario.id
@@ -321,7 +328,7 @@ export default function Atendimentos() {
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">
-                  Atendimentos de {funcionarioSelecionado?.nome} - {new Date(dataFiltro).toLocaleDateString('pt-BR')}
+                  Atendimentos de {funcionarioSelecionado?.nome} - {dataFiltroAtendimento}
                 </h5>
                 <button type="button" className="btn-close" onClick={fecharModalAtendimentos}></button>
               </div>
