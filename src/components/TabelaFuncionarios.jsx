@@ -85,6 +85,33 @@ export default function TabelaFuncionarios() {
     return () => unsub();
   }, []);
 
+  useEffect(() => {
+    const checkDayChangeAndReset = async () => {
+      try {
+        const lastResetDate = localStorage.getItem('lastResetDate');
+        const now = new Date();
+        const todayStr = now.toISOString().slice(0, 10); // yyyy-mm-dd
+        console.log('[RESET] Verificando reset de status:', { lastResetDate, todayStr });
+
+        if (lastResetDate !== todayStr && funcionarios.length > 0) {
+          console.log('[RESET] Novo dia detectado! Resetando status dos funcionários...');
+          for (const func of funcionarios) {
+            if (func.status !== "disponivel") {
+              console.log(`[RESET] Resetando funcionário ${func.nome} (${func.idDoc}) de ${func.status} para disponível`);
+              await handleStatusChange(func.idDoc, "disponivel");
+            }
+          }
+          localStorage.setItem('lastResetDate', todayStr);
+          console.log('[RESET] Reset concluído!');
+        }
+      } catch (error) {
+        console.error('[RESET] Erro ao tentar resetar status dos funcionários:', error);
+      }
+    };
+
+    checkDayChangeAndReset();
+  }, [funcionarios]);
+
   // Função para filtrar funcionários
   const filteredFuncionarios = funcionarios.filter(func => {
     const matchNome = func.nome?.toLowerCase().includes(searchNome.toLowerCase());
@@ -92,18 +119,20 @@ export default function TabelaFuncionarios() {
     return matchNome && matchNicho;
   });
 
-  async function registrarAtendimento(profissionalId, clienteNome, tipoCliente) {
-    const dataAtual = new Date();
+  async function registrarAtendimento(profissionalId, clienteNome, tipoCliente, horarioInicio = null) {
+    // Se não foi passado horário de início, usa o horário atual
+    const dataAtendimento = horarioInicio || new Date();
+    
     // Usar fuso horário local para ambos os campos
-    const ano = dataAtual.getFullYear();
-    const mes = String(dataAtual.getMonth() + 1).padStart(2, '0');
-    const dia = String(dataAtual.getDate()).padStart(2, '0');
+    const ano = dataAtendimento.getFullYear();
+    const mes = String(dataAtendimento.getMonth() + 1).padStart(2, '0');
+    const dia = String(dataAtendimento.getDate()).padStart(2, '0');
     const dataFormatada = `${ano}-${mes}-${dia}`;
 
     await addDoc(collection(db, 'atendimentos'), {
       profissionalId,
       data: dataFormatada,
-      horario: Timestamp.fromDate(dataAtual),
+      horario: Timestamp.fromDate(dataAtendimento),
       cliente: clienteNome,
       tipoCliente: tipoCliente
     });
@@ -132,8 +161,13 @@ export default function TabelaFuncionarios() {
           // Buscar dados do cliente armazenados temporariamente
           const dadosCliente = sessionStorage.getItem(`cliente_${idDoc}`);
           if (dadosCliente) {
-            const { nome, tipoCliente } = JSON.parse(dadosCliente);
-            await registrarAtendimento(idDoc, nome, tipoCliente);
+            const dados = JSON.parse(dadosCliente);
+            const { nome, tipoCliente, horarioInicio } = dados;
+            
+            // Converte o horário de início de volta para Date
+            const horarioInicioDate = horarioInicio ? new Date(horarioInicio) : null;
+            
+            await registrarAtendimento(idDoc, nome, tipoCliente, horarioInicioDate);
             sessionStorage.removeItem(`cliente_${idDoc}`); // Limpa os dados temporários
           } else {
             // Fallback: registra sem dados do cliente
@@ -159,9 +193,14 @@ export default function TabelaFuncionarios() {
 
     try {
       const docRef = doc(db, "funcionarios", funcionarioParaOcupar.idDoc);
+      const horarioInicio = new Date(); // Captura o horário exato do início
       
-      // Armazena dados do cliente temporariamente
-      sessionStorage.setItem(`cliente_${funcionarioParaOcupar.idDoc}`, JSON.stringify(clienteData));
+      // Armazena dados do cliente e horário de início temporariamente
+      const dadosCompletos = {
+        ...clienteData,
+        horarioInicio: horarioInicio.toISOString() // Converte para string para armazenar no sessionStorage
+      };
+      sessionStorage.setItem(`cliente_${funcionarioParaOcupar.idDoc}`, JSON.stringify(dadosCompletos));
       
       // Atualiza status para ocupado
       await updateDoc(docRef, { status: "ocupado" });
