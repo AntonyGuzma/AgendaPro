@@ -6,7 +6,7 @@ import Spinner from '../../components/Spinner'
 // comentário só pra testar estratégia de controle de versão  - segundo teste
 export default function Atendimentos() {
   const [atendimentos, setAtendimentos] = useState([]);
-  const [funcionarios, setFuncionarios] = useState({});
+  const [funcionarios, setFuncionarios] = useState([]);
   // Usar fuso horário local para inicializar a data do filtro
   const hoje = new Date();
   const ano = hoje.getFullYear();
@@ -61,13 +61,9 @@ export default function Atendimentos() {
       try {
         const q = query(collection(db, "funcionarios"));
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
-          const funcs = {};
+          const funcs = [];
           querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            funcs[doc.id] = {
-              nome: data.nome,
-              nicho: data.nicho
-            };
+            funcs.push({ idDoc: doc.id, ...doc.data() });
           });
           setFuncionarios(funcs);
         });
@@ -110,7 +106,7 @@ export default function Atendimentos() {
               }
               
               // Buscar dados do funcionário do cache
-              const funcionario = funcionarios[data.profissionalId];
+              const funcionario = (funcionarios || []).find(f => f.idDoc === data.profissionalId);
               
               if (funcionario) {
                 atendimentosArray.push({
@@ -142,7 +138,7 @@ export default function Atendimentos() {
       }
     }
 
-    if (Object.keys(funcionarios).length > 0) {
+    if (funcionarios.length > 0) {
       setupListener();
     }
 
@@ -151,40 +147,31 @@ export default function Atendimentos() {
     };
   }, [funcionarios]);
 
+  // Sempre que dataFiltro ou atendimentos mudar, atualize o agrupamento
   useEffect(() => {
-    const atendimentosFiltrados = atendimentos.filter(atend => 
-      atend.dataFormatada === dataFiltro
-    );
-
-    const grupoPorProfissao = atendimentosFiltrados.reduce((acc, atend) => {
-      const { nicho } = atend;
-      if (!acc[nicho]) {
-        acc[nicho] = [];
-      }
-      acc[nicho].push(atend);
-      return acc;
-    }, {});
-
+    if (!atendimentos.length) {
+      setAtendimentosPorProfissional({});
+      return;
+    }
+    const atendimentosDoDia = atendimentos.filter(atend => atend.data === dataFiltro);
     const contagem = {};
-    Object.entries(grupoPorProfissao).forEach(([profissao, atendimentos]) => {
-      atendimentos.forEach(atend => {
-        const key = `${profissao}-${atend.profissionalId}-${atend.profissionalName}`;
-        contagem[key] = (contagem[key] || 0) + 1;
-      });
+    atendimentosDoDia.forEach(atend => {
+      const key = `${atend.profissionalId}-${atend.profissionalName}`;
+      contagem[key] = (contagem[key] || 0) + 1;
     });
-
     setAtendimentosPorProfissional(contagem);
   }, [atendimentos, dataFiltro]);
 
   const dadosAgrupados = Object.entries(atendimentosPorProfissional).map(([key, quantidade]) => {
-    const [profissao, profissionalId, profissionalName] = key.split('-');
+    const [profissionalId, profissionalName] = key.split('-');
+    const funcionario = (funcionarios || []).find(f => f.idDoc === profissionalId);
     return {
       id: profissionalId,
-      profissao,
       nome: profissionalName,
-      quantidade
+      quantidade,
+      nicho: funcionario?.nicho || ''
     };
-  }).sort((a, b) => a.profissao.localeCompare(b.profissao));
+  });
 
   const profissaoRowSpans = dadosAgrupados.reduce((acc, dado, i, arr) => {
     if (i === 0 || dado.profissao !== arr[i - 1].profissao) {
@@ -194,40 +181,32 @@ export default function Atendimentos() {
   }, {});
 
   // Função para buscar atendimentos detalhados de um funcionário
-  async function buscarAtendimentosDetalhados(funcionario) {
-    try {
-      // Usa a data do filtro principal para exibir no modal (formato dd/mm/yyyy)
-      setDataFiltroAtendimento(
-        dataFiltro.split('-').reverse().join('/')
-      );
-
-      // Filtra os atendimentos pela data do filtro principal e pelo funcionário
-      const atendimentosFiltrados = atendimentos.filter(atend => 
-        atend.dataFormatada === dataFiltro && 
-        atend.profissionalId === funcionario.id
-      );
-      
-      // Ordenar por horário (mais recente primeiro)
-      const atendimentosOrdenados = atendimentosFiltrados.sort((a, b) => {
-        if (a.horario?.toDate && b.horario?.toDate) {
-          return b.horario.toDate() - a.horario.toDate();
-        }
-        return 0;
-      }).map(atendimento => ({
-        ...atendimento,
-        horarioFormatado: atendimento.horario?.toDate ? 
-          atendimento.horario.toDate().toLocaleTimeString('pt-BR', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          }) : 'N/A'
-      }));
-      
-      setAtendimentosDetalhados(atendimentosOrdenados);
-      setFuncionarioSelecionado(funcionario);
+  async function buscarAtendimentosDetalhados(funcionario, profissionalId) {
+    // Preenche idDoc se estiver undefined
+    if (!funcionario) {
+      setAtendimentosDetalhados([]);
+      setFuncionarioSelecionado(null);
       setShowAtendimentosModal(true);
-    } catch (error) {
-      console.error("Erro ao buscar atendimentos:", error);
+      return;
     }
+    if (!funcionario.idDoc) {
+      // Tenta preencher com id ou profissionalId
+      funcionario.idDoc = funcionario.id || profissionalId || '';
+    }
+    if (!funcionario.idDoc) {
+      setAtendimentosDetalhados([]);
+      setFuncionarioSelecionado(null);
+      setShowAtendimentosModal(true);
+      return;
+    }
+    setDataFiltroAtendimento(dataFiltro.split('-').reverse().join('/'));
+    const atendimentosFiltrados = atendimentos.filter(atend =>
+      atend.data === dataFiltro && atend.profissionalId === funcionario.idDoc
+    );
+    const atendimentosOrdenados = atendimentosFiltrados.sort((a, b) => a.horario.localeCompare(b.horario));
+    setAtendimentosDetalhados(atendimentosOrdenados);
+    setFuncionarioSelecionado(funcionario);
+    setShowAtendimentosModal(true);
   }
 
   // Função para fechar modal de atendimentos
@@ -287,22 +266,14 @@ export default function Atendimentos() {
                         </tr>
                       ) : (
                         dadosAgrupados.map((dado, index) => (
-                          <tr key={`${dado.id}-${index}`}>
-                            {profissaoRowSpans[dado.id] && (
-                              <td 
-                                className="align-middle" 
-                                rowSpan={profissaoRowSpans[dado.id]}
-                              >
-                                {dado.profissao}
-                              </td>
-                            )}
-                            <td className="align-middle">{dado.nome}</td>
-                            <td className="align-middle text-center">
-                              <button 
-                                type="button" 
+                          <tr key={dado.id}>
+                            <td>{dado.nicho}</td>
+                            <td>{dado.nome}</td>
+                            <td className="text-center">
+                              <button
+                                type="button"
                                 className="btn btn-link p-0 text-decoration-none"
-                                onClick={() => buscarAtendimentosDetalhados(dado)}
-                                disabled={!dado.quantidade || dado.quantidade === 0}
+                                onClick={() => buscarAtendimentosDetalhados({ idDoc: dado.id, nome: dado.nome, nicho: dado.nicho })}
                               >
                                 <span className="badge bg-secondary">
                                   {dado.quantidade}
@@ -348,7 +319,7 @@ export default function Atendimentos() {
                       <tbody>
                         {atendimentosDetalhados.map((atendimento) => (
                           <tr key={atendimento.idDoc}>
-                            <td>{atendimento.horarioFormatado}</td>
+                            <td>{atendimento.horario || 'N/A'}</td>
                             <td>{atendimento.cliente || 'N/A'}</td>
                             <td>
                               <span className={`badge ${

@@ -85,30 +85,50 @@ export default function TabelaFuncionarios() {
     return () => unsub();
   }, []);
 
+  // Função utilitária para obter a data/hora de Manaus (UTC-4) como string formatada
+  function getManausDateString() {
+    // Pega o horário UTC atual
+    const now = new Date();
+    // Constrói a data de Manaus usando o fuso UTC-4
+    const manaus = new Date(now.toLocaleString('en-US', { timeZone: 'America/Manaus' }));
+    const yyyy = manaus.getFullYear();
+    const MM = String(manaus.getMonth() + 1).padStart(2, '0');
+    const dd = String(manaus.getDate()).padStart(2, '0');
+    return `${yyyy}-${MM}-${dd}`;
+  }
+
+  function getManausTimeString() {
+    const now = new Date();
+    // Pega o horário UTC
+    const utcHours = now.getUTCHours();
+    const utcMinutes = now.getUTCMinutes();
+    // Manaus é UTC-4
+    let manausHours = utcHours - 4;
+    if (manausHours < 0) manausHours += 24;
+    const hh = String(manausHours).padStart(2, '0');
+    const min = String(utcMinutes).padStart(2, '0');
+    return `${hh}:${min}`;
+  }
+
+  // Ajustar lógica de virada do dia para usar fuso de Brasília
   useEffect(() => {
     const checkDayChangeAndReset = async () => {
       try {
         const lastResetDate = localStorage.getItem('lastResetDate');
-        const now = new Date();
-        const todayStr = now.toISOString().slice(0, 10); // yyyy-mm-dd
-        console.log('[RESET] Verificando reset de status:', { lastResetDate, todayStr });
-
+        const now = new Date(); // Use new Date() para pegar o horário UTC atual
+        const todayStr = now.toISOString().slice(0, 10); // yyyy-mm-dd (Brasília)
         if (lastResetDate !== todayStr && funcionarios.length > 0) {
-          console.log('[RESET] Novo dia detectado! Resetando status dos funcionários...');
           for (const func of funcionarios) {
             if (func.status !== "disponivel") {
-              console.log(`[RESET] Resetando funcionário ${func.nome} (${func.idDoc}) de ${func.status} para disponível`);
               await handleStatusChange(func.idDoc, "disponivel");
             }
           }
           localStorage.setItem('lastResetDate', todayStr);
-          console.log('[RESET] Reset concluído!');
         }
       } catch (error) {
         console.error('[RESET] Erro ao tentar resetar status dos funcionários:', error);
       }
     };
-
     checkDayChangeAndReset();
   }, [funcionarios]);
 
@@ -138,6 +158,7 @@ export default function TabelaFuncionarios() {
     });
   }
 
+  // Função para mudar status para disponível (não registra novo atendimento)
   async function handleStatusChange(idDoc, novoStatus) {
     const docRef = doc(db, "funcionarios", idDoc);
     const payload = { status: novoStatus };
@@ -156,23 +177,8 @@ export default function TabelaFuncionarios() {
       }
 
       if (novoStatus === "disponivel") {
-        // Só registra atendimento e zera o tempo se vier do status 'ocupado'
+        // Só zera o tempo se vier do status 'ocupado'
         if (statusAtual === "ocupado") {
-          // Buscar dados do cliente armazenados temporariamente
-          const dadosCliente = sessionStorage.getItem(`cliente_${idDoc}`);
-          if (dadosCliente) {
-            const dados = JSON.parse(dadosCliente);
-            const { nome, tipoCliente, horarioInicio } = dados;
-            
-            // Converte o horário de início de volta para Date
-            const horarioInicioDate = horarioInicio ? new Date(horarioInicio) : null;
-            
-            await registrarAtendimento(idDoc, nome, tipoCliente, horarioInicioDate);
-            sessionStorage.removeItem(`cliente_${idDoc}`); // Limpa os dados temporários
-          } else {
-            // Fallback: registra sem dados do cliente
-            await registrarAtendimento(idDoc, '', '');
-          }
           payload.ultimoStatusDisponivel = serverTimestamp();
         }
       }
@@ -193,24 +199,27 @@ export default function TabelaFuncionarios() {
 
     try {
       const docRef = doc(db, "funcionarios", funcionarioParaOcupar.idDoc);
-      const horarioInicio = new Date(); // Captura o horário exato do início
-      
-      // Armazena dados do cliente e horário de início temporariamente
-      const dadosCompletos = {
-        ...clienteData,
-        horarioInicio: horarioInicio.toISOString() // Converte para string para armazenar no sessionStorage
-      };
-      sessionStorage.setItem(`cliente_${funcionarioParaOcupar.idDoc}`, JSON.stringify(dadosCompletos));
-      
+      const dataStr = getManausDateString(); // Ex: '2025-07-21'
+      const horarioInicioStr = getManausTimeString(); // Ex: '09:45'
+
+      // Salva o atendimento imediatamente
+      await addDoc(collection(db, 'atendimentos'), {
+        profissionalId: funcionarioParaOcupar.idDoc,
+        data: dataStr, // só a data!
+        horario: horarioInicioStr, // só o horário!
+        cliente: clienteData.nome,
+        tipoCliente: clienteData.tipoCliente
+      });
+
       // Atualiza status para ocupado
       await updateDoc(docRef, { status: "ocupado" });
-      
+
       // Limpa o modal
       setShowClienteModal(false);
       setClienteData({ nome: '', tipoCliente: '' });
       setFuncionarioParaOcupar(null);
-      
-      notifySucess("Funcionário ocupado com sucesso!");
+
+      notifySucess("Funcionário ocupado e atendimento registrado!");
     } catch (error) {
       console.error("Erro ao ocupar funcionário:", error);
       notifyError("Erro ao ocupar funcionário: " + error.message);
@@ -257,19 +266,15 @@ export default function TabelaFuncionarios() {
           atendimentos.push({
             id: doc.id,
             ...atendimento,
-            horarioFormatado: atendimento.horario?.toDate ? 
-              atendimento.horario.toDate().toLocaleTimeString('pt-BR', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-              }) : 'N/A'
+            horarioFormatado: atendimento.horario || 'N/A'
           });
         }
       });
       
       // Ordenar por horário (mais recente primeiro)
       atendimentos.sort((a, b) => {
-        if (a.horario?.toDate && b.horario?.toDate) {
-          return b.horario.toDate() - a.horario.toDate();
+        if (a.horario && b.horario) {
+          return new Date(b.horario) - new Date(a.horario);
         }
         return 0;
       });
